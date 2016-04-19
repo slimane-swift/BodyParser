@@ -34,6 +34,8 @@ extension Request {
 }
 
 public struct BodyParser: MiddlewareType {
+    public init(){}
+
     public func respond(req: Request, res: Response, next: MiddlewareChain) {
         var req = req
         guard let contentType = req.contentType else {
@@ -45,7 +47,7 @@ public struct BodyParser: MiddlewareType {
                 case ("application", "json"):
                     req.json = try JSONParser().parse(req.body.becomeBuffer())
                 case ("application", "x-www-form-urlencoded"):
-                    try URLEncodedFormParser().parse(req.body.becomeBuffer())
+                    req.formData = try URLEncodedFormParser().parse(req.body.becomeBuffer())
                 default:
                     print("Unkown Content-Type.")
             }
