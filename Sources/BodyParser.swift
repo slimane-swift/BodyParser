@@ -36,7 +36,7 @@ extension Request {
 public struct BodyParser: MiddlewareType {
     public init(){}
 
-    public func respond(req: Request, res: Response, next: MiddlewareChain) {
+    public func respond(_ req: Request, res: Response, next: MiddlewareChain) {
         var req = req
         guard let contentType = req.contentType else {
             return next(.Chain(req, res))
@@ -45,7 +45,7 @@ public struct BodyParser: MiddlewareType {
         do {
             switch (contentType.type, contentType.subtype) {
                 case ("application", "json"):
-                    req.json = try JSONParser().parse(req.body.becomeBuffer())
+                    req.json = try JSONParser().parse(data: req.body.becomeBuffer())
                 case ("application", "x-www-form-urlencoded"):
                     req.formData = try URLEncodedFormParser().parse(req.body.becomeBuffer())
                 default:

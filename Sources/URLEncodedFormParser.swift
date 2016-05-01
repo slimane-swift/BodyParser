@@ -33,15 +33,15 @@ enum URLEncodedFormParseError: ErrorProtocol {
 public struct URLEncodedFormParser {
     public init() {}
 
-    public func parse(data: Data) throws -> URLEncodedForm {
+    public func parse(_ data: Data) throws -> URLEncodedForm {
         guard let string = try? String(data: data) else {
             throw URLEncodedFormParseError.unsupportedEncoding
         }
 
         var urlEncodedForm: URLEncodedForm = [:]
 
-        for parameter in string.split("&") {
-            let tokens = parameter.split("=")
+        for parameter in string.split(byString: "&") {
+            let tokens = parameter.split(byString: "=")
 
             if tokens.count == 2 {
                 let key = try String(percentEncoded: tokens[0])
