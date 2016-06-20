@@ -6,10 +6,8 @@
 //
 //
 
-@_exported import Middleware
 @_exported import JSON
-@_exported import S4
-@_exported import C7
+@_exported import HTTP
 
 extension Request {
     public var json: JSON? {
@@ -33,28 +31,32 @@ extension Request {
     }
 }
 
-public struct BodyParser: MiddlewareType {
+public struct BodyParser: AsyncMiddleware {
     public init(){}
 
-    public func respond(_ req: Request, res: Response, next: MiddlewareChain) {
-        var req = req
-        guard let contentType = req.contentType else {
-            return next(.Chain(req, res))
+    public func respond(to request: Request, chainingTo next: AsyncResponder, result: ((Void) throws -> Response) -> Void) {
+        guard let contentType = request.contentType else {
+            return next.respond(to: request, result: result)
         }
+        var request = request
 
         do {
-            switch (contentType.type, contentType.subtype) {
+            if case .buffer(let data) = request.body {
+                switch (contentType.type, contentType.subtype) {
                 case ("application", "json"):
-                    req.json = try JSONParser().parse(data: req.body.becomeBuffer())
+                    request.json = try JSONParser().parse(data: data)
                 case ("application", "x-www-form-urlencoded"):
-                    req.formData = try URLEncodedFormParser().parse(req.body.becomeBuffer())
+                    request.formData = try URLEncodedFormParser().parse(data)
                 default:
                     print("Unkown Content-Type.")
+                }
             }
         } catch {
-            return next(.Error(error))
+            result {
+                throw error
+            }
         }
 
-        next(.Chain(req, res))
+        next.respond(to: request, result: result)
     }
 }
