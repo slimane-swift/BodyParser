@@ -10,9 +10,9 @@
 @_exported import HTTP
 
 extension Request {
-    public var json: JSON? {
+    public var json: Map? {
         get {
-            return self.storage["jsonBody"] as? JSON
+            return self.storage["jsonBody"] as? Map
         }
 
         set {
@@ -31,32 +31,61 @@ extension Request {
     }
 }
 
-public struct BodyParser: AsyncMiddleware {
-    public init(){}
-
-    public func respond(to request: Request, chainingTo next: AsyncResponder, result: ((Void) throws -> Response) -> Void) {
-        guard let contentType = request.contentType else {
-            return next.respond(to: request, result: result)
-        }
-        var request = request
-
-        do {
-            if case .buffer(let data) = request.body {
-                switch (contentType.type, contentType.subtype) {
-                case ("application", "json"):
-                    request.json = try JSONParser().parse(data: data)
-                case ("application", "x-www-form-urlencoded"):
-                    request.formData = try URLEncodedFormParser().parse(data)
-                default:
-                    print("Unkown Content-Type.")
+public struct BodyParser {
+    
+    public struct URLEncoded: AsyncMiddleware {
+        public init(){}
+        
+        public func respond(to request: Request, chainingTo next: AsyncResponder, result: @escaping ((Void) throws -> Response) -> Void) {
+            guard let contentType = request.contentType else {
+                return next.respond(to: request, result: result)
+            }
+            var request = request
+            
+            do {
+                if case .buffer(let data) = request.body {
+                    switch (contentType.type, contentType.subtype) {
+                    case ("application", "x-www-form-urlencoded"):
+                        request.formData = try URLEncodedFormParser().parse(data: data)
+                    default:
+                        break
+                    }
+                }
+            } catch {
+                result {
+                    throw error
                 }
             }
-        } catch {
-            result {
-                throw error
-            }
+            
+            next.respond(to: request, result: result)
         }
-
-        next.respond(to: request, result: result)
+    }
+    
+    public struct JSON: AsyncMiddleware {
+        public init(){}
+        
+        public func respond(to request: Request, chainingTo next: AsyncResponder, result: @escaping ((Void) throws -> Response) -> Void) {
+            guard let contentType = request.contentType else {
+                return next.respond(to: request, result: result)
+            }
+            var request = request
+            
+            do {
+                if case .buffer(let data) = request.body {
+                    switch (contentType.type, contentType.subtype) {
+                    case ("application", "json"):
+                        request.json = try JSONMapParser().parse(data)
+                    default:
+                        break
+                    }
+                }
+            } catch {
+                result {
+                    throw error
+                }
+            }
+            
+            next.respond(to: request, result: result)
+        }
     }
 }
