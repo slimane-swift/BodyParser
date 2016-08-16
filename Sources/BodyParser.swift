@@ -10,9 +10,9 @@
 @_exported import HTTP
 
 extension Request {
-    public var json: Map? {
+    public var json: JSON? {
         get {
-            return self.storage["jsonBody"] as? Map
+            return self.storage["jsonBody"] as? JSON
         }
 
         set {
@@ -74,7 +74,7 @@ public struct BodyParser {
                 if case .buffer(let data) = request.body {
                     switch (contentType.type, contentType.subtype) {
                     case ("application", "json"):
-                        request.json = try JSONMapParser().parse(data)
+                        request.json = try JSONParser().parse(data: data)
                     default:
                         break
                     }
